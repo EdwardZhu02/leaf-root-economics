@@ -1,3 +1,11 @@
+# ****************************************************************
+# TODO: Modified for use with individual-level analysis workflow
+# in response to HW's advice, 2025.2
+#
+# Keeping the full 87 coupled aboveground and belowground sampled
+# individuals for analysis
+# ****************************************************************
+
 rm(list=ls())
 library(tidyverse)
 library(dplyr)
@@ -6,16 +14,18 @@ library(ggthemes)
 library(patchwork) # plot merging
 library(cowplot) # plot merging
 
-load("traitDataFujian-spavg-phylo-step2.RData")
+load("2502-indv-level-code/traitDataFujian-Ind-step1.RData")
 
 ### SET DATA TO USE ###
-traitData_touse = traitDataIndv_spgfavg_log
+traitData_touse = traitDataIndv_SelectedTraits_log
+
+# TODO: (25.2.21) Resolve historical problem: nomination between "speciesFullName" and "SpeciesFullName"
+traitData_touse = traitData_touse %>% rename(speciesFullName=SpeciesFullName)
 
 # divide data based on growth forms for separate regression
 traitData_touse_tree = traitData_touse %>% dplyr::filter(GrowthForm == "tree")
 traitData_touse_shrub = traitData_touse %>% dplyr::filter(GrowthForm == "shrub")
 traitData_touse_liana = traitData_touse %>% dplyr::filter(GrowthForm == "liana") # may be useless
-
 
 # ------------------------------------------------------------------------------
 # PART 1: LES (LMA-LNC)
@@ -51,19 +61,19 @@ smaplt_shrub_slope_lower = model.sma.LNC_LMA_shrub[["coef"]][[1]][2,2]
 smaplt_shrub_slope_upper = model.sma.LNC_LMA_shrub[["coef"]][[1]][2,3]
 
 
-smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, LNC, LMA) %>%
+smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, SiteID, LNC, LMA) %>%
   dplyr::mutate(LMA = as.numeric(LMA), LNC = as.numeric(LNC))
 smaplt_total_data$predicted_LNC = smaplt_total_intercept + smaplt_total_slope * smaplt_total_data$LMA
 smaplt_total_data$predicted_LNC_upper_total = smaplt_total_intercept_upper + smaplt_total_slope_upper * smaplt_total_data$LMA
 smaplt_total_data$predicted_LNC_lower_total = smaplt_total_intercept_lower + smaplt_total_slope_lower * smaplt_total_data$LMA
 
-smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, LNC, LMA) %>%
+smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, SiteID, LNC, LMA) %>%
   dplyr::mutate(LMA = as.numeric(LMA), LNC = as.numeric(LNC))
 smaplt_tree_data$predicted_LNC = smaplt_tree_intercept + smaplt_tree_slope * smaplt_tree_data$LMA
 smaplt_tree_data$predicted_LNC_upper_tree = smaplt_tree_intercept_upper + smaplt_tree_slope_upper * smaplt_tree_data$LMA
 smaplt_tree_data$predicted_LNC_lower_tree = smaplt_tree_intercept_lower + smaplt_tree_slope_lower * smaplt_tree_data$LMA
 
-smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, LNC, LMA) %>%
+smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, SiteID,SiteID, LNC, LMA) %>%
   dplyr::mutate(LMA = as.numeric(LMA), LNC = as.numeric(LNC))
 smaplt_shrub_data$predicted_LNC = smaplt_shrub_intercept + smaplt_shrub_slope * smaplt_shrub_data$LMA
 smaplt_shrub_data$predicted_LNC_upper_shrub = smaplt_shrub_intercept_upper + smaplt_shrub_slope_upper * smaplt_shrub_data$LMA
@@ -71,15 +81,48 @@ smaplt_shrub_data$predicted_LNC_lower_shrub = smaplt_shrub_intercept_lower + sma
 
 # Annotation, R2 and p-value
 model.sma.LNC_LMA_annotlabel = paste0(
-  "Merged: R2=", round(as.numeric(model.sma.LNC_LMA_total[["r2"]]), digits = 2), " p",
-  ifelse(signif(as.numeric(model.sma.LNC_LMA_total[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.LNC_LMA_total[["pval"]]), digits = 2), "\n")),
+  "Merged:R=", 
+  round(ifelse(
+    as.numeric(model.sma.LNC_LMA_total[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.LNC_LMA_total[["r2"]])),
+    -sqrt(as.numeric(model.sma.LNC_LMA_total[["r2"]]))
+  ), digits = 2), 
+  " P",
+  ifelse(
+    signif(as.numeric(model.sma.LNC_LMA_total[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.LNC_LMA_total[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.LNC_LMA_total[["pval"]]), digits = 2), "\n"))),
   
-  "Tree: R2=", round(as.numeric(model.sma.LNC_LMA_tree[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.LNC_LMA_tree[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.LNC_LMA_tree[["pval"]]), digits = 2), "\n")),
+  "Tree:R=",
+  round(ifelse(
+    as.numeric(model.sma.LNC_LMA_tree[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.LNC_LMA_tree[["r2"]])),
+    -sqrt(as.numeric(model.sma.LNC_LMA_tree[["r2"]]))
+  ), digits = 2), 
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.LNC_LMA_tree[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.LNC_LMA_tree[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.LNC_LMA_tree[["pval"]]), digits = 2), "\n"))),
   
-  "Shrub: R2=", round(as.numeric(model.sma.LNC_LMA_shrub[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.LNC_LMA_shrub[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.LNC_LMA_shrub[["pval"]]), digits = 2), "\n"))
-  )
+  "Shrub:R=",
+  round(ifelse(
+    as.numeric(model.sma.LNC_LMA_shrub[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.LNC_LMA_shrub[["r2"]])),
+    -sqrt(as.numeric(model.sma.LNC_LMA_shrub[["r2"]]))
+  ), digits = 2),
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.LNC_LMA_shrub[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.LNC_LMA_shrub[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.LNC_LMA_shrub[["pval"]]), digits = 2), "\n")))
+)
 
 smaplt.LNC_LMA = ggplot(smaplt_total_data, aes(x=LMA, y=LNC)) +
   geom_point(aes(color=GrowthForm), size=2, alpha=1.0) +  # data points
@@ -98,14 +141,14 @@ smaplt.LNC_LMA = ggplot(smaplt_total_data, aes(x=LMA, y=LNC)) +
     xlim = c(min(smaplt_shrub_data$LMA, na.rm=T), max(smaplt_shrub_data$LMA, na.rm=T)),
     color = "#7998AD", linewidth = 1.0
     ) +
-  labs(subtitle = "LES fast-slow (LNC-LMA)", x = "lnLMA", y = "lnLNC") + 
+  labs(subtitle = "LES (LNC-LMA)", x = "lnLMA", y = "lnLNC") + 
   theme_minimal() + 
   theme(axis.line = element_line(colour = "black")) +
-  theme(legend.position = "none") +
+  theme(legend.position = "right") +
   scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
   annotate("text", x = 0.008, y = 1.18, label = model.sma.LNC_LMA_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 
-ggsave(plot = smaplt.LNC_LMA, filename = "smaplt.LNC_LMA.pdf", width = 3, height = 2.9)
+ggsave(plot = smaplt.LNC_LMA, filename = "2502-indv-level-code/Ind_sma.LNC_LMA.pdf", width = 2.8, height = 2.8)
 
 # ------------------------------------------------------------------------------
 # PART 2: RES collaboration (RD-SRL)
@@ -141,19 +184,19 @@ smaplt_shrub_slope_lower = model.sma.RD_SRL_shrub[["coef"]][[1]][2,2]
 smaplt_shrub_slope_upper = model.sma.RD_SRL_shrub[["coef"]][[1]][2,3]
 
 
-smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, RD, SRL) %>%
+smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, SiteID, RD, SRL) %>%
   dplyr::mutate(SRL = as.numeric(SRL), RD = as.numeric(RD))
 smaplt_total_data$predicted_RD = smaplt_total_intercept + smaplt_total_slope * smaplt_total_data$SRL
 smaplt_total_data$predicted_RD_upper_total = smaplt_total_intercept_upper + smaplt_total_slope_upper * smaplt_total_data$SRL
 smaplt_total_data$predicted_RD_lower_total = smaplt_total_intercept_lower + smaplt_total_slope_lower * smaplt_total_data$SRL
 
-smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, RD, SRL) %>%
+smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, SiteID, RD, SRL) %>%
   dplyr::mutate(SRL = as.numeric(SRL), RD = as.numeric(RD))
 smaplt_tree_data$predicted_RD = smaplt_tree_intercept + smaplt_tree_slope * smaplt_tree_data$SRL
 smaplt_tree_data$predicted_RD_upper_tree = smaplt_tree_intercept_upper + smaplt_tree_slope_upper * smaplt_tree_data$SRL
 smaplt_tree_data$predicted_RD_lower_tree = smaplt_tree_intercept_lower + smaplt_tree_slope_lower * smaplt_tree_data$SRL
 
-smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, RD, SRL) %>%
+smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, SiteID, RD, SRL) %>%
   dplyr::mutate(SRL = as.numeric(SRL), RD = as.numeric(RD))
 smaplt_shrub_data$predicted_RD = smaplt_shrub_intercept + smaplt_shrub_slope * smaplt_shrub_data$SRL
 smaplt_shrub_data$predicted_RD_upper_shrub = smaplt_shrub_intercept_upper + smaplt_shrub_slope_upper * smaplt_shrub_data$SRL
@@ -161,14 +204,47 @@ smaplt_shrub_data$predicted_RD_lower_shrub = smaplt_shrub_intercept_lower + smap
 
 # Annotation, R2 and p-value
 model.sma.RD_SRL_annotlabel = paste0(
-  "Merged: R2=", round(as.numeric(model.sma.RD_SRL_total[["r2"]]), digits = 2), " p",
-  ifelse(signif(as.numeric(model.sma.RD_SRL_total[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.RD_SRL_total[["pval"]]), digits = 2), "\n")),
+  "Merged:R=", 
+  round(ifelse(
+    as.numeric(model.sma.RD_SRL_total[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.RD_SRL_total[["r2"]])),
+    -sqrt(as.numeric(model.sma.RD_SRL_total[["r2"]]))
+  ), digits = 2), 
+  " P",
+  ifelse(
+    signif(as.numeric(model.sma.RD_SRL_total[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.RD_SRL_total[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.RD_SRL_total[["pval"]]), digits = 2), "\n"))),
   
-  "Tree: R2=", round(as.numeric(model.sma.RD_SRL_tree[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.RD_SRL_tree[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.RD_SRL_tree[["pval"]]), digits = 2), "\n")),
+  "Tree:R=",
+  round(ifelse(
+    as.numeric(model.sma.RD_SRL_tree[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.RD_SRL_tree[["r2"]])),
+    -sqrt(as.numeric(model.sma.RD_SRL_tree[["r2"]]))
+  ), digits = 2), 
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.RD_SRL_tree[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.RD_SRL_tree[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.RD_SRL_tree[["pval"]]), digits = 2), "\n"))),
   
-  "Shrub: R2=", round(as.numeric(model.sma.RD_SRL_shrub[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.RD_SRL_shrub[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.RD_SRL_shrub[["pval"]]), digits = 2), "\n"))
+  "Shrub:R=",
+  round(ifelse(
+    as.numeric(model.sma.RD_SRL_shrub[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.RD_SRL_shrub[["r2"]])),
+    -sqrt(as.numeric(model.sma.RD_SRL_shrub[["r2"]]))
+  ), digits = 2),
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.RD_SRL_shrub[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.RD_SRL_shrub[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.RD_SRL_shrub[["pval"]]), digits = 2), "\n")))
 )
 
 smaplt.RD_SRL = ggplot(smaplt_total_data, aes(x=SRL, y=RD)) +
@@ -192,10 +268,10 @@ smaplt.RD_SRL = ggplot(smaplt_total_data, aes(x=SRL, y=RD)) +
   theme_minimal() + 
   theme(axis.line = element_line(colour = "black")) +
   theme(legend.position = "none") +
-  scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
+  scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) +
   annotate("text", x = 3.6, y = 0.53, label = model.sma.RD_SRL_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 
-ggsave(plot = smaplt.RD_SRL, filename = "smaplt.RD_SRL.pdf", width = 3, height = 2.9)
+ggsave(plot = smaplt.RD_SRL, filename = "2502-indv-level-code/Ind_sma.RD_SRL.pdf", width = 2.8, height = 2.8)
 
 # ------------------------------------------------------------------------------
 # PART 3: RES conservation (RNC-RTD)
@@ -231,19 +307,19 @@ smaplt_shrub_slope_lower = model.sma.RNC_RTD_shrub[["coef"]][[1]][2,2]
 smaplt_shrub_slope_upper = model.sma.RNC_RTD_shrub[["coef"]][[1]][2,3]
 
 
-smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, RNC, RTD) %>%
+smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, SiteID, RNC, RTD) %>%
   dplyr::mutate(RTD = as.numeric(RTD), RNC = as.numeric(RNC))
 smaplt_total_data$predicted_RNC = smaplt_total_intercept + smaplt_total_slope * smaplt_total_data$RTD
 smaplt_total_data$predicted_RNC_upper_total = smaplt_total_intercept_upper + smaplt_total_slope_upper * smaplt_total_data$RTD
 smaplt_total_data$predicted_RNC_lower_total = smaplt_total_intercept_lower + smaplt_total_slope_lower * smaplt_total_data$RTD
 
-smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, RNC, RTD) %>%
+smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, SiteID, RNC, RTD) %>%
   dplyr::mutate(RTD = as.numeric(RTD), RNC = as.numeric(RNC))
 smaplt_tree_data$predicted_RNC = smaplt_tree_intercept + smaplt_tree_slope * smaplt_tree_data$RTD
 smaplt_tree_data$predicted_RNC_upper_tree = smaplt_tree_intercept_upper + smaplt_tree_slope_upper * smaplt_tree_data$RTD
 smaplt_tree_data$predicted_RNC_lower_tree = smaplt_tree_intercept_lower + smaplt_tree_slope_lower * smaplt_tree_data$RTD
 
-smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, RNC, RTD) %>%
+smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, SiteID, RNC, RTD) %>%
   dplyr::mutate(RTD = as.numeric(RTD), RNC = as.numeric(RNC))
 smaplt_shrub_data$predicted_RNC = smaplt_shrub_intercept + smaplt_shrub_slope * smaplt_shrub_data$RTD
 smaplt_shrub_data$predicted_RNC_upper_shrub = smaplt_shrub_intercept_upper + smaplt_shrub_slope_upper * smaplt_shrub_data$RTD
@@ -251,14 +327,47 @@ smaplt_shrub_data$predicted_RNC_lower_shrub = smaplt_shrub_intercept_lower + sma
 
 # Annotation, R2 and p-value
 model.sma.RNC_RTD_annotlabel = paste0(
-  "Merged: R2=", round(as.numeric(model.sma.RNC_RTD_total[["r2"]]), digits = 2), " p",
-  ifelse(signif(as.numeric(model.sma.RNC_RTD_total[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.RNC_RTD_total[["pval"]]), digits = 2), "\n")),
+  "Merged:R=", 
+  round(ifelse(
+    as.numeric(model.sma.RNC_RTD_total[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.RNC_RTD_total[["r2"]])),
+    -sqrt(as.numeric(model.sma.RNC_RTD_total[["r2"]]))
+  ), digits = 2), 
+  " P",
+  ifelse(
+    signif(as.numeric(model.sma.RNC_RTD_total[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.RNC_RTD_total[["pval"]]), digits = 2)<0.05,
+      "<0.05\n", 
+      paste0("=",signif(as.numeric(model.sma.RNC_RTD_total[["pval"]]), digits = 2), "\n"))),
   
-  "Tree: R2=", round(as.numeric(model.sma.RNC_RTD_tree[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.RNC_RTD_tree[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.RNC_RTD_tree[["pval"]]), digits = 2), "\n")),
+  "Tree:R=",
+  round(ifelse(
+    as.numeric(model.sma.RNC_RTD_tree[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.RNC_RTD_tree[["r2"]])),
+    -sqrt(as.numeric(model.sma.RNC_RTD_tree[["r2"]]))
+  ), digits = 2), 
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.RNC_RTD_tree[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.RNC_RTD_tree[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.RNC_RTD_tree[["pval"]]), digits = 2), "\n"))),
   
-  "Shrub: R2=", round(as.numeric(model.sma.RNC_RTD_shrub[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.RNC_RTD_shrub[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.RNC_RTD_shrub[["pval"]]), digits = 2), "\n"))
+  "Shrub:R=",
+  round(ifelse(
+    as.numeric(model.sma.RNC_RTD_shrub[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.RNC_RTD_shrub[["r2"]])),
+    -sqrt(as.numeric(model.sma.RNC_RTD_shrub[["r2"]]))
+  ), digits = 2),
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.RNC_RTD_shrub[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.RNC_RTD_shrub[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.RNC_RTD_shrub[["pval"]]), digits = 2), "\n")))
 )
 
 smaplt.RNC_RTD = ggplot(smaplt_total_data, aes(x=RTD, y=RNC)) +
@@ -282,10 +391,10 @@ smaplt.RNC_RTD = ggplot(smaplt_total_data, aes(x=RTD, y=RNC)) +
   theme_minimal() + 
   theme(axis.line = element_line(colour = "black")) +
   theme(legend.position = "none") +
-  scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
+  scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) +
   annotate("text", x = 0.165, y = 1.48, label = model.sma.RNC_RTD_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 
-ggsave(plot = smaplt.RNC_RTD, filename = "smaplt.RNC_RTD.pdf", width = 3, height = 2.9)
+ggsave(plot = smaplt.RNC_RTD, filename = "2502-indv-level-code/Ind_sma.RNC_RTD.pdf", width = 2.8, height = 2.8)
 
 
 # ------------------------------------------------------------------------------
@@ -322,19 +431,19 @@ smaplt_shrub_slope_lower = model.sma.RDMC_RTD_shrub[["coef"]][[1]][2,2]
 smaplt_shrub_slope_upper = model.sma.RDMC_RTD_shrub[["coef"]][[1]][2,3]
 
 
-smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, RDMC, RTD) %>%
+smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, SiteID, RDMC, RTD) %>%
   dplyr::mutate(RTD = as.numeric(RTD), RDMC = as.numeric(RDMC))
 smaplt_total_data$predicted_RDMC = smaplt_total_intercept + smaplt_total_slope * smaplt_total_data$RTD
 smaplt_total_data$predicted_RDMC_upper_total = smaplt_total_intercept_upper + smaplt_total_slope_upper * smaplt_total_data$RTD
 smaplt_total_data$predicted_RDMC_lower_total = smaplt_total_intercept_lower + smaplt_total_slope_lower * smaplt_total_data$RTD
 
-smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, RDMC, RTD) %>%
+smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, SiteID, RDMC, RTD) %>%
   dplyr::mutate(RTD = as.numeric(RTD), RDMC = as.numeric(RDMC))
 smaplt_tree_data$predicted_RDMC = smaplt_tree_intercept + smaplt_tree_slope * smaplt_tree_data$RTD
 smaplt_tree_data$predicted_RDMC_upper_tree = smaplt_tree_intercept_upper + smaplt_tree_slope_upper * smaplt_tree_data$RTD
 smaplt_tree_data$predicted_RDMC_lower_tree = smaplt_tree_intercept_lower + smaplt_tree_slope_lower * smaplt_tree_data$RTD
 
-smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, RDMC, RTD) %>%
+smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, SiteID, RDMC, RTD) %>%
   dplyr::mutate(RTD = as.numeric(RTD), RDMC = as.numeric(RDMC))
 smaplt_shrub_data$predicted_RDMC = smaplt_shrub_intercept + smaplt_shrub_slope * smaplt_shrub_data$RTD
 smaplt_shrub_data$predicted_RDMC_upper_shrub = smaplt_shrub_intercept_upper + smaplt_shrub_slope_upper * smaplt_shrub_data$RTD
@@ -342,14 +451,47 @@ smaplt_shrub_data$predicted_RDMC_lower_shrub = smaplt_shrub_intercept_lower + sm
 
 # Annotation, R2 and p-value
 model.sma.RDMC_RTD_annotlabel = paste0(
-  "Merged: R2=", round(as.numeric(model.sma.RDMC_RTD_total[["r2"]]), digits = 2), " p",
-  ifelse(signif(as.numeric(model.sma.RDMC_RTD_total[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.RDMC_RTD_total[["pval"]]), digits = 2), "\n")),
+  "Merged:R=", 
+  round(ifelse(
+    as.numeric(model.sma.RDMC_RTD_total[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.RDMC_RTD_total[["r2"]])),
+    -sqrt(as.numeric(model.sma.RDMC_RTD_total[["r2"]]))
+  ), digits = 2), 
+  " P",
+  ifelse(
+    signif(as.numeric(model.sma.RDMC_RTD_total[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.RDMC_RTD_total[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.RDMC_RTD_total[["pval"]]), digits = 2), "\n"))),
   
-  "Tree: R2=", round(as.numeric(model.sma.RDMC_RTD_tree[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.RDMC_RTD_tree[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.RDMC_RTD_tree[["pval"]]), digits = 2), "\n")),
+  "Tree:R=",
+  round(ifelse(
+    as.numeric(model.sma.RDMC_RTD_tree[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.RDMC_RTD_tree[["r2"]])),
+    -sqrt(as.numeric(model.sma.RDMC_RTD_tree[["r2"]]))
+  ), digits = 2), 
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.RDMC_RTD_tree[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.RDMC_RTD_tree[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.RDMC_RTD_tree[["pval"]]), digits = 2), "\n"))),
   
-  "Shrub: R2=", round(as.numeric(model.sma.RDMC_RTD_shrub[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.RDMC_RTD_shrub[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.RDMC_RTD_shrub[["pval"]]), digits = 2), "\n"))
+  "Shrub:R=",
+  round(ifelse(
+    as.numeric(model.sma.RDMC_RTD_shrub[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.RDMC_RTD_shrub[["r2"]])),
+    -sqrt(as.numeric(model.sma.RDMC_RTD_shrub[["r2"]]))
+  ), digits = 2),
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.RDMC_RTD_shrub[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.RDMC_RTD_shrub[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.RDMC_RTD_shrub[["pval"]]), digits = 2), "\n")))
 )
 
 smaplt.RDMC_RTD = ggplot(smaplt_total_data, aes(x=RTD, y=RDMC)) +
@@ -373,10 +515,10 @@ smaplt.RDMC_RTD = ggplot(smaplt_total_data, aes(x=RTD, y=RDMC)) +
   theme_minimal() + 
   theme(axis.line = element_line(colour = "black")) +
   theme(legend.position = "none") +
-  scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
+  scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) +
   annotate("text", x = 0.05, y = 0.42, label = model.sma.RDMC_RTD_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 
-ggsave(plot = smaplt.RDMC_RTD, filename = "smaplt.RDMC_RTD.pdf", width = 3, height = 3)
+ggsave(plot = smaplt.RDMC_RTD, filename = "2502-indv-level-code/Ind_sma.RDMC_RTD.pdf", width = 2.8, height = 2.8)
 
 
 # ------------------------------------------------------------------------------
@@ -413,19 +555,19 @@ smaplt_shrub_slope_lower = model.sma.RDMC_RNC_shrub[["coef"]][[1]][2,2]
 smaplt_shrub_slope_upper = model.sma.RDMC_RNC_shrub[["coef"]][[1]][2,3]
 
 
-smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, RDMC, RNC) %>%
+smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, SiteID, RDMC, RNC) %>%
   dplyr::mutate(RNC = as.numeric(RNC), RDMC = as.numeric(RDMC))
 smaplt_total_data$predicted_RDMC = smaplt_total_intercept + smaplt_total_slope * smaplt_total_data$RNC
 smaplt_total_data$predicted_RDMC_upper_total = smaplt_total_intercept_upper + smaplt_total_slope_upper * smaplt_total_data$RNC
 smaplt_total_data$predicted_RDMC_lower_total = smaplt_total_intercept_lower + smaplt_total_slope_lower * smaplt_total_data$RNC
 
-smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, RDMC, RNC) %>%
+smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, SiteID, RDMC, RNC) %>%
   dplyr::mutate(RNC = as.numeric(RNC), RDMC = as.numeric(RDMC))
 smaplt_tree_data$predicted_RDMC = smaplt_tree_intercept + smaplt_tree_slope * smaplt_tree_data$RNC
 smaplt_tree_data$predicted_RDMC_upper_tree = smaplt_tree_intercept_upper + smaplt_tree_slope_upper * smaplt_tree_data$RNC
 smaplt_tree_data$predicted_RDMC_lower_tree = smaplt_tree_intercept_lower + smaplt_tree_slope_lower * smaplt_tree_data$RNC
 
-smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, RDMC, RNC) %>%
+smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, SiteID, RDMC, RNC) %>%
   dplyr::mutate(RNC = as.numeric(RNC), RDMC = as.numeric(RDMC))
 smaplt_shrub_data$predicted_RDMC = smaplt_shrub_intercept + smaplt_shrub_slope * smaplt_shrub_data$RNC
 smaplt_shrub_data$predicted_RDMC_upper_shrub = smaplt_shrub_intercept_upper + smaplt_shrub_slope_upper * smaplt_shrub_data$RNC
@@ -433,14 +575,47 @@ smaplt_shrub_data$predicted_RDMC_lower_shrub = smaplt_shrub_intercept_lower + sm
 
 # Annotation, R2 and p-value
 model.sma.RDMC_RNC_annotlabel = paste0(
-  "Merged: R2=", round(as.numeric(model.sma.RDMC_RNC_total[["r2"]]), digits = 2), " p",
-  ifelse(signif(as.numeric(model.sma.RDMC_RNC_total[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.RDMC_RNC_total[["pval"]]), digits = 2), "\n")),
+  "Merged:R=", 
+  round(ifelse(
+    as.numeric(model.sma.RDMC_RNC_total[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.RDMC_RNC_total[["r2"]])),
+    -sqrt(as.numeric(model.sma.RDMC_RNC_total[["r2"]]))
+  ), digits = 2), 
+  " P",
+  ifelse(
+    signif(as.numeric(model.sma.RDMC_RNC_total[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.RDMC_RNC_total[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.RDMC_RNC_total[["pval"]]), digits = 2), "\n"))),
   
-  "Tree: R2=", round(as.numeric(model.sma.RDMC_RNC_tree[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.RDMC_RNC_tree[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.RDMC_RNC_tree[["pval"]]), digits = 2), "\n")),
+  "Tree:R=",
+  round(ifelse(
+    as.numeric(model.sma.RDMC_RNC_tree[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.RDMC_RNC_tree[["r2"]])),
+    -sqrt(as.numeric(model.sma.RDMC_RNC_tree[["r2"]]))
+  ), digits = 2), 
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.RDMC_RNC_tree[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.RDMC_RNC_tree[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.RDMC_RNC_tree[["pval"]]), digits = 2), "\n"))),
   
-  "Shrub: R2=", round(as.numeric(model.sma.RDMC_RNC_shrub[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.RDMC_RNC_shrub[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.RDMC_RNC_shrub[["pval"]]), digits = 2), "\n"))
+  "Shrub:R=",
+  round(ifelse(
+    as.numeric(model.sma.RDMC_RNC_shrub[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.RDMC_RNC_shrub[["r2"]])),
+    -sqrt(as.numeric(model.sma.RDMC_RNC_shrub[["r2"]]))
+  ), digits = 2),
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.RDMC_RNC_shrub[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.RDMC_RNC_shrub[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.RDMC_RNC_shrub[["pval"]]), digits = 2), "\n")))
 )
 
 smaplt.RDMC_RNC = ggplot(smaplt_total_data, aes(x=RNC, y=RDMC)) +
@@ -464,10 +639,10 @@ smaplt.RDMC_RNC = ggplot(smaplt_total_data, aes(x=RNC, y=RDMC)) +
   theme_minimal() + 
   theme(axis.line = element_line(colour = "black")) +
   theme(legend.position = "none") +
-  scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
+  scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) +
   annotate("text", x = 0.87, y = 0.335, label = model.sma.RDMC_RNC_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 
-ggsave(plot = smaplt.RDMC_RNC, filename = "smaplt.RDMC_RNC.pdf", width = 3, height = 3)
+ggsave(plot = smaplt.RDMC_RNC, filename = "2502-indv-level-code/Ind_sma.RDMC_RNC.pdf", width = 2.8, height = 2.8)
 
 
 # ------------------------------------------------------------------------------
@@ -504,19 +679,19 @@ smaplt_shrub_slope_lower = model.sma.LNC_LPC_shrub[["coef"]][[1]][2,2]
 smaplt_shrub_slope_upper = model.sma.LNC_LPC_shrub[["coef"]][[1]][2,3]
 
 
-smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, LNC, LPC) %>%
+smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, SiteID, LNC, LPC) %>%
   dplyr::mutate(LPC = as.numeric(LPC), LNC = as.numeric(LNC))
 smaplt_total_data$predicted_LNC = smaplt_total_intercept + smaplt_total_slope * smaplt_total_data$LPC
 smaplt_total_data$predicted_LNC_upper_total = smaplt_total_intercept_upper + smaplt_total_slope_upper * smaplt_total_data$LPC
 smaplt_total_data$predicted_LNC_lower_total = smaplt_total_intercept_lower + smaplt_total_slope_lower * smaplt_total_data$LPC
 
-smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, LNC, LPC) %>%
+smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, SiteID, LNC, LPC) %>%
   dplyr::mutate(LPC = as.numeric(LPC), LNC = as.numeric(LNC))
 smaplt_tree_data$predicted_LNC = smaplt_tree_intercept + smaplt_tree_slope * smaplt_tree_data$LPC
 smaplt_tree_data$predicted_LNC_upper_tree = smaplt_tree_intercept_upper + smaplt_tree_slope_upper * smaplt_tree_data$LPC
 smaplt_tree_data$predicted_LNC_lower_tree = smaplt_tree_intercept_lower + smaplt_tree_slope_lower * smaplt_tree_data$LPC
 
-smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, LNC, LPC) %>%
+smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, SiteID, LNC, LPC) %>%
   dplyr::mutate(LPC = as.numeric(LPC), LNC = as.numeric(LNC))
 smaplt_shrub_data$predicted_LNC = smaplt_shrub_intercept + smaplt_shrub_slope * smaplt_shrub_data$LPC
 smaplt_shrub_data$predicted_LNC_upper_shrub = smaplt_shrub_intercept_upper + smaplt_shrub_slope_upper * smaplt_shrub_data$LPC
@@ -524,14 +699,47 @@ smaplt_shrub_data$predicted_LNC_lower_shrub = smaplt_shrub_intercept_lower + sma
 
 # Annotation, R2 and p-value
 model.sma.LNC_LPC_annotlabel = paste0(
-  "Merged: R2=", round(as.numeric(model.sma.LNC_LPC_total[["r2"]]), digits = 2), " p",
-  ifelse(signif(as.numeric(model.sma.LNC_LPC_total[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.LNC_LPC_total[["pval"]]), digits = 2), "\n")),
+  "Merged:R=", 
+  round(ifelse(
+    as.numeric(model.sma.LNC_LPC_total[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.LNC_LPC_total[["r2"]])),
+    -sqrt(as.numeric(model.sma.LNC_LPC_total[["r2"]]))
+  ), digits = 2), 
+  " P",
+  ifelse(
+    signif(as.numeric(model.sma.LNC_LPC_total[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.LNC_LPC_total[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.LNC_LPC_total[["pval"]]), digits = 2), "\n"))),
   
-  "Tree: R2=", round(as.numeric(model.sma.LNC_LPC_tree[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.LNC_LPC_tree[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.LNC_LPC_tree[["pval"]]), digits = 2), "\n")),
+  "Tree:R=",
+  round(ifelse(
+    as.numeric(model.sma.LNC_LPC_tree[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.LNC_LPC_tree[["r2"]])),
+    -sqrt(as.numeric(model.sma.LNC_LPC_tree[["r2"]]))
+  ), digits = 2), 
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.LNC_LPC_tree[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.LNC_LPC_tree[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.LNC_LPC_tree[["pval"]]), digits = 2), "\n"))),
   
-  "Shrub: R2=", round(as.numeric(model.sma.LNC_LPC_shrub[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.LNC_LPC_shrub[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.LNC_LPC_shrub[["pval"]]), digits = 2), "\n"))
+  "Shrub:R=",
+  round(ifelse(
+    as.numeric(model.sma.LNC_LPC_shrub[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.LNC_LPC_shrub[["r2"]])),
+    -sqrt(as.numeric(model.sma.LNC_LPC_shrub[["r2"]]))
+  ), digits = 2),
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.LNC_LPC_shrub[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.LNC_LPC_shrub[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.LNC_LPC_shrub[["pval"]]), digits = 2), "\n")))
 )
 
 smaplt.LNC_LPC = ggplot(smaplt_total_data, aes(x=LPC, y=LNC)) +
@@ -551,14 +759,14 @@ smaplt.LNC_LPC = ggplot(smaplt_total_data, aes(x=LPC, y=LNC)) +
     xlim = c(min(smaplt_shrub_data$LPC, na.rm=T), max(smaplt_shrub_data$LPC, na.rm=T)),
     color = "#7998AD", linewidth = 1.0
   ) +
-  labs(subtitle = "LES fast-slow (LNC-LPC)", x = "lnLPC", y = "lnLNC") + 
+  labs(subtitle = "LES (LNC-LPC)", x = "lnLPC", y = "lnLNC") + 
   theme_minimal() + 
   theme(axis.line = element_line(colour = "black")) +
   theme(legend.position = "none") +
-  scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
+  scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) +
   annotate("text", x = 0.37, y = 1.35, label = model.sma.LNC_LPC_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 
-ggsave(plot = smaplt.LNC_LPC, filename = "smaplt.LNC_LPC.pdf", width = 3, height = 3)
+ggsave(plot = smaplt.LNC_LPC, filename = "2502-indv-level-code/Ind_sma.LNC_LPC.pdf", width = 2.8, height = 2.8)
 
 
 # ------------------------------------------------------------------------------
@@ -595,19 +803,19 @@ smaplt_shrub_slope_lower = model.sma.LMA_LPC_shrub[["coef"]][[1]][2,2]
 smaplt_shrub_slope_upper = model.sma.LMA_LPC_shrub[["coef"]][[1]][2,3]
 
 
-smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, LMA, LPC) %>%
+smaplt_total_data = traitData_touse %>% dplyr::select(speciesFullName, GrowthForm, SiteID, LMA, LPC) %>%
   dplyr::mutate(LPC = as.numeric(LPC), LMA = as.numeric(LMA))
 smaplt_total_data$predicted_LMA = smaplt_total_intercept + smaplt_total_slope * smaplt_total_data$LPC
 smaplt_total_data$predicted_LMA_upper_total = smaplt_total_intercept_upper + smaplt_total_slope_upper * smaplt_total_data$LPC
 smaplt_total_data$predicted_LMA_lower_total = smaplt_total_intercept_lower + smaplt_total_slope_lower * smaplt_total_data$LPC
 
-smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, LMA, LPC) %>%
+smaplt_tree_data = traitData_touse_tree %>% dplyr::select(speciesFullName, GrowthForm, SiteID, LMA, LPC) %>%
   dplyr::mutate(LPC = as.numeric(LPC), LMA = as.numeric(LMA))
 smaplt_tree_data$predicted_LMA = smaplt_tree_intercept + smaplt_tree_slope * smaplt_tree_data$LPC
 smaplt_tree_data$predicted_LMA_upper_tree = smaplt_tree_intercept_upper + smaplt_tree_slope_upper * smaplt_tree_data$LPC
 smaplt_tree_data$predicted_LMA_lower_tree = smaplt_tree_intercept_lower + smaplt_tree_slope_lower * smaplt_tree_data$LPC
 
-smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, LMA, LPC) %>%
+smaplt_shrub_data = traitData_touse_shrub %>% dplyr::select(speciesFullName, GrowthForm, SiteID, LMA, LPC) %>%
   dplyr::mutate(LPC = as.numeric(LPC), LMA = as.numeric(LMA))
 smaplt_shrub_data$predicted_LMA = smaplt_shrub_intercept + smaplt_shrub_slope * smaplt_shrub_data$LPC
 smaplt_shrub_data$predicted_LMA_upper_shrub = smaplt_shrub_intercept_upper + smaplt_shrub_slope_upper * smaplt_shrub_data$LPC
@@ -615,14 +823,47 @@ smaplt_shrub_data$predicted_LMA_lower_shrub = smaplt_shrub_intercept_lower + sma
 
 # Annotation, R2 and p-value
 model.sma.LMA_LPC_annotlabel = paste0(
-  "Merged: R2=", round(as.numeric(model.sma.LMA_LPC_total[["r2"]]), digits = 2), " p",
-  ifelse(signif(as.numeric(model.sma.LMA_LPC_total[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.LMA_LPC_total[["pval"]]), digits = 2), "\n")),
+  "Merged:R=", 
+  round(ifelse(
+    as.numeric(model.sma.LMA_LPC_total[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.LMA_LPC_total[["r2"]])),
+    -sqrt(as.numeric(model.sma.LMA_LPC_total[["r2"]]))
+  ), digits = 2), 
+  " P",
+  ifelse(
+    signif(as.numeric(model.sma.LMA_LPC_total[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.LMA_LPC_total[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.LMA_LPC_total[["pval"]]), digits = 2), "\n"))),
   
-  "Tree: R2=", round(as.numeric(model.sma.LMA_LPC_tree[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.LMA_LPC_tree[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.LMA_LPC_tree[["pval"]]), digits = 2), "\n")),
+  "Tree:R=",
+  round(ifelse(
+    as.numeric(model.sma.LMA_LPC_tree[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.LMA_LPC_tree[["r2"]])),
+    -sqrt(as.numeric(model.sma.LMA_LPC_tree[["r2"]]))
+  ), digits = 2), 
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.LMA_LPC_tree[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.LMA_LPC_tree[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.LMA_LPC_tree[["pval"]]), digits = 2), "\n"))),
   
-  "Shrub: R2=", round(as.numeric(model.sma.LMA_LPC_shrub[["r2"]]), digits = 2), " p", 
-  ifelse(signif(as.numeric(model.sma.LMA_LPC_shrub[["pval"]]), digits = 2)<0.01, "<0.01\n", paste0("=",signif(as.numeric(model.sma.LMA_LPC_shrub[["pval"]]), digits = 2), "\n"))
+  "Shrub:R=",
+  round(ifelse(
+    as.numeric(model.sma.LMA_LPC_shrub[["groupsummary"]][["Slope"]]) > 0,
+    sqrt(as.numeric(model.sma.LMA_LPC_shrub[["r2"]])),
+    -sqrt(as.numeric(model.sma.LMA_LPC_shrub[["r2"]]))
+  ), digits = 2),
+  " P", 
+  ifelse(
+    signif(as.numeric(model.sma.LMA_LPC_shrub[["pval"]]), digits = 2)<0.01,
+    "<0.01\n", 
+    ifelse(signif(as.numeric(model.sma.LMA_LPC_shrub[["pval"]]), digits = 2)<0.05,
+           "<0.05\n", 
+           paste0("=",signif(as.numeric(model.sma.LMA_LPC_shrub[["pval"]]), digits = 2), "\n")))
 )
 
 smaplt.LMA_LPC = ggplot(smaplt_total_data, aes(x=LPC, y=LMA)) +
@@ -642,14 +883,14 @@ smaplt.LMA_LPC = ggplot(smaplt_total_data, aes(x=LPC, y=LMA)) +
     xlim = c(min(smaplt_shrub_data$LPC, na.rm=T), max(smaplt_shrub_data$LPC, na.rm=T)),
     color = "#7998AD", linewidth = 1.0
   ) +
-  labs(subtitle = "LES fast-slow (LMA-LPC)", x = "lnLPC", y = "lnLMA") + 
+  labs(subtitle = "LES (LMA-LPC)", x = "lnLPC", y = "lnLMA") + 
   theme_minimal() + 
   theme(axis.line = element_line(colour = "black")) +
   theme(legend.position = "none") +
-  scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
+  scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) +
   annotate("text", x = 0.52, y = 0.016, label = model.sma.LMA_LPC_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 
-ggsave(plot = smaplt.LMA_LPC, filename = "smaplt.LMA_LPC.pdf", width = 3, height = 3)
+ggsave(plot = smaplt.LMA_LPC, filename = "2502-indv-level-code/Ind_sma.LMA_LPC.pdf", width = 2.8, height = 2.8)
 
 
 # PART 8: Try to merge all these plots (failed) --------------------------------

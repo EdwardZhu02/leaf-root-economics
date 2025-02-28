@@ -5,7 +5,7 @@ library(tidyr)
 # devtools::install_github("jinyizju/V.PhyloMaker2")
 library(V.PhyloMaker2) # phylo-tree construction
 
-load(file = "2502-indv-level-code/traitDataFujian-Ind-step1.RData")
+load(file = "traitDataFujian-normbysp-step1.RData")
 
 # Use plantlist package to normalize species names
 # Perform round 1 checking

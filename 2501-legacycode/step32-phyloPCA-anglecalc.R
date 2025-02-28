@@ -224,7 +224,7 @@ varAngleMelted_combined = varAngleMelted_combined %>%
   dplyr::mutate(pair_name = paste0(trait1,"-",trait2)) %>%
   dplyr::mutate(pair_annotation = ifelse(
     pair_name == "SRL-RD", "RES collaboration",
-    ifelse(pair_name %in% c("RTD-RNC","RNC-RDMC","RTD-RDMC"), "RES conservation",
+    ifelse(pair_name %in% c("RTD-RNC","RNC-RDMC","RTD-RDMC"), "RES convervation",
            ifelse(pair_name %in% c("LMA-LNC","LMA-LPC","LNC-LPC"), "LES", "other")))
     )
 
@@ -240,7 +240,6 @@ plt_anglecorr_phy_RLES = ggplot(data=varAngleMelted_combined,
   stat_poly_eq(formula = y ~ x, aes(label = paste0("p",paste(ifelse(..p.value..<0.0001, "<0.0001", paste0("=",..p.value..)), ..rr.label.., sep = "~~"))), parse = TRUE, rr.digits = 4) + 
   scale_color_manual(values = c("#EECA40", "lightgray", "#5EC7D0", "#F07673")) + 
   theme_classic() + theme(plot.background = element_blank()) +
-  labs(x="R-LES", y="R-LES (phylo)") + 
   coord_cartesian(xlim = c(0, 180), ylim = c(0, 180))
 
 # plot2: raw+RDMC, nonphylo-phylo ----------------------------------------------
@@ -254,7 +253,6 @@ plt_anglecorr_phy_RLESRDMC = ggplot(data=varAngleMelted_combined,
   stat_poly_eq(formula = y ~ x, aes(label = paste0("p",paste(ifelse(..p.value..<0.0001, "<0.0001", paste0("=",..p.value..)), ..rr.label.., sep = "~~"))), parse = TRUE, rr.digits = 4) + 
   scale_color_manual(values = c("#EECA40", "lightgray", "#5EC7D0", "#F07673")) + 
   theme_classic() + theme(plot.background = element_blank()) +
-  labs(x="R-LES + RDMC", y="R-LES + RDMC (phylo)") + 
   coord_cartesian(xlim = c(0, 180), ylim = c(0, 180))
 
 # plot3: raw+LPC, nonphylo-phylo -----------------------------------------------
@@ -268,7 +266,6 @@ plt_anglecorr_phy_RLESLPC = ggplot(data=varAngleMelted_combined,
   stat_poly_eq(formula = y ~ x, aes(label = paste0("p",paste(ifelse(..p.value..<0.0001, "<0.0001", paste0("=",..p.value..)), ..rr.label.., sep = "~~"))), parse = TRUE, rr.digits = 4) + 
   scale_color_manual(values = c("#EECA40", "lightgray", "#5EC7D0", "#F07673")) + 
   theme_classic() + theme(plot.background = element_blank()) +
-  labs(x="R-LES + LPC", y="R-LES + LPC (phylo)") + 
   coord_cartesian(xlim = c(0, 180), ylim = c(0, 180))
 
 # plot3: raw+RDMC+LPC, nonphylo-phylo ------------------------------------------
@@ -282,11 +279,10 @@ plt_anglecorr_phy_RLESRDMCLPC = ggplot(data=varAngleMelted_combined,
   stat_poly_eq(formula = y ~ x, aes(label = paste0("p",paste(ifelse(..p.value..<0.0001, "<0.0001", paste0("=",..p.value..)), ..rr.label.., sep = "~~"))), parse = TRUE, rr.digits = 4) + 
   scale_color_manual(values = c("#EECA40", "lightgray", "#5EC7D0", "#F07673")) + 
   theme_classic() + theme(plot.background = element_blank()) +
-  labs(x="R-LES + RDMC,LPC", y="R-LES + RDMC,LPC (phylo)") + 
   coord_cartesian(xlim = c(0, 180), ylim = c(0, 180))
 
 plt_anglecorr_phy_total = plt_anglecorr_phy_RLES + plt_anglecorr_phy_RLESRDMC + plt_anglecorr_phy_RLESLPC + plt_anglecorr_phy_RLESRDMCLPC + plot_layout(guides = "collect") & theme(legend.position='bottom', legend.title = element_blank())
 
 ggsave(plot = plt_anglecorr_phy_total, filename = "plt_anglecorr_phycomp_total.pdf", width = 5.5, height= 6)
-# ggsave(plot = plt_anglecorr_phy_total, filename = "plt_anglecorr_phycomp_total.png", width = 5.5, height= 6, dpi=300)
+ggsave(plot = plt_anglecorr_phy_total, filename = "plt_anglecorr_phycomp_total.png", width = 5.5, height= 6, dpi=300)
 

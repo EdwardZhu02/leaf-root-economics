@@ -62,8 +62,7 @@ traitData_touse_liana = traitData_touse %>% dplyr::filter(GrowthForm == "liana")
 #
 # Define the list of variables
 #variables = c("RTD","SRL","RD","RNC","RCC","RPC","SRR25","RDMC","LMA","LNC","LCC","LPC","Rdark25P", "Rlight25P","rs25","Vcmax25","Asat") #,"vH","WD","Ks","TLP","SWCleaf","SWCbranch","H","DBH")
-# variables = c("RTD","SRL","RD","RNC","RCC","RPC","SRR25","RDMC","LMA","LNC","LCC","LPC","Rdark25P", "Rlight25P","rs25","Vcmax25","Asat","vH","WD","Ks","TLP","SWCleaf","SWCbranch","H","DBH")
-variables = c("Asat","LCC","LMA","LNC","LPC","Rdark25P","Vcmax25","RCC","RD","RDMC","RNC","RPC","RTD","SRA","SRL","SRR25")
+variables = c("RTD","SRL","RD","RNC","RCC","RPC","SRR25","RDMC","LMA","LNC","LCC","LPC","Rdark25P", "Rlight25P","rs25","Vcmax25","Asat","vH","WD","Ks","TLP","SWCleaf","SWCbranch","H","DBH")
 
 # Initialize an empty matrix to store the P values and R square values
 pvalue_matrix = matrix(NA, nrow = length(variables), ncol = length(variables),
@@ -90,20 +89,12 @@ for (i in 1:length(variables)) { # row
         anova_result <- anova.pgls(model.pgls)
         p_value <- anova_result[1, 5] # Extract ANOVA Pr(>F)
         model_summary <- summary(model.pgls)
-        r_value <- ifelse(
-          as.numeric(model_summary[["adj.r.squared"]]) > 0,
-          ifelse(
-            as.numeric(model.pgls[["model"]][["coef"]][2]) > 0,
-            sqrt(as.numeric(model_summary[["adj.r.squared"]])),
-            -sqrt(as.numeric(model_summary[["adj.r.squared"]]))
-          ),
-          0 # if r2 < 0 in PGLS
-        )
+        rsq_value <- as.numeric(model_summary[["adj.r.squared"]]) # Extract adjusted r2
         lambda_value <- as.numeric(model_summary[["param"]][["lambda"]]) # Extract lambda
         # lambda estimated via max likelihood method
         
         pvalue_matrix[i, j] <- p_value
-        rsq_matrix[i,j] <- r_value
+        rsq_matrix[i,j] <- rsq_value
         lambda_matrix[i,j] <- lambda_value
       } else {
         # Error in pgls(as.formula("SRR25 ~ RDMC"), data = PGLSdata, lambda = "ML"): 
@@ -114,20 +105,12 @@ for (i in 1:length(variables)) { # row
         anova_result <- anova.pgls(model.pgls)
         p_value <- anova_result[1, 5] # Extract ANOVA Pr(>F)
         model_summary <- summary(model.pgls)
-        r_value <- ifelse(
-          as.numeric(model_summary[["adj.r.squared"]]) > 0,
-          ifelse(
-            as.numeric(model.pgls[["model"]][["coef"]][2]) > 0,
-            sqrt(as.numeric(model_summary[["adj.r.squared"]])),
-            -sqrt(as.numeric(model_summary[["adj.r.squared"]]))
-          ),
-          0 # if r2 < 0 in PGLS
-        )
+        rsq_value <- as.numeric(model_summary[["adj.r.squared"]]) # Extract adjusted r2
         lambda_value <- as.numeric(model_summary[["param"]][["lambda"]]) # Extract lambda
         # lambda estimated via max likelihood method
         
         pvalue_matrix[i, j] <- p_value
-        rsq_matrix[i,j] <- r_value
+        rsq_matrix[i,j] <- rsq_value
         lambda_matrix[i,j] <- lambda_value
       }
     }
@@ -155,15 +138,15 @@ pvalue_matrix = ifelse(pvalue_matrix>0.1,0.1,pvalue_matrix)
 melted_pvalue_matrix = melt(pvalue_matrix, na.rm = F)
 
 rsq_matrix = round(rsq_matrix,2)
-# rsq_matrix = ifelse(rsq_matrix<0,0,rsq_matrix)
+rsq_matrix = ifelse(rsq_matrix<0,0,rsq_matrix)
 melted_rsq_matrix = melt(rsq_matrix, na.rm = F)
 
 lambda_matrix = round(lambda_matrix,2)
-#lambda_matrix = ifelse(lambda_matrix<0,0,lambda_matrix)
+lambda_matrix = ifelse(lambda_matrix<0,0,lambda_matrix)
 melted_lambda_matrix = melt(lambda_matrix, na.rm = F)
 
-# RLES_vars = c("Asat","LCC","LMA","LNC","LPC","Rdark25P","Vcmax25","RCC","RD","RDMC","RNC","RPC","RTD","SRA","SRL","SRR25")
-# melted_lambda_matrix = melted_lambda_matrix %>% dplyr::filter(!(Var1 %in% RLES_vars))
+RLES_vars = c("RTD","SRL","RD","RNC","RCC","RPC","SRR25","RDMC","LMA","LNC","LCC","LPC","Rdark25P", "Rlight25P","rs25","Vcmax25","Asat")
+melted_lambda_matrix = melted_lambda_matrix %>% dplyr::filter(!(Var1 %in% RLES_vars))
 
 # The lambda plot --------------------------------------------------------------
 plt_htmap_lambda = ggplot(data = melted_lambda_matrix, aes(Var2, Var1, fill = value)) +
@@ -175,7 +158,7 @@ plt_htmap_lambda = ggplot(data = melted_lambda_matrix, aes(Var2, Var1, fill = va
   theme_minimal() + 
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
   coord_fixed() +
-  geom_text(aes(Var2, Var1, label = ifelse(value>0.1, value, " ")), color = "black", size = 2.6) +
+  geom_text(aes(Var2, Var1, label = ifelse(value>0, value, " ")), color = "black", size = 2.6) +
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
@@ -200,7 +183,7 @@ ggsave(plot=plt_htmap_lambda, filename="plt_PGLS_htmap_lambda_all.png", width=7,
 #   dplyr::filter(Var1 %in% signif_dependent_vars)
 
 
-signif_dependent_vars = c("SRR25", "SRL", "RPC", "RD", "LMA", "LCC")
+signif_dependent_vars = c("DBH","H","SWCbranch","SWCleaf","TLP","WD")
 melted_pvalue_matrix_lambdaSignif = melted_pvalue_matrix %>%
   dplyr::filter(Var1 %in% signif_dependent_vars)
 melted_rsq_matrix_lambdaSignif = melted_rsq_matrix %>%
@@ -212,11 +195,11 @@ plt_htmap_pvalue = ggplot(data = melted_pvalue_matrix_lambdaSignif, aes(Var2, Va
   scale_fill_gradient2(low = "#8583A9", high = "white",
                        na.value = "grey50",
                        midpoint = 0.085, limit = c(0,0.1), space = "Lab",
-                       name="PGLS - P value (Pr>F)\nCutoff: P>0.1") +
+                       name="Pr(>F) (NS>0.1)") +
   theme_minimal() + 
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
   coord_fixed() +
-  geom_text(aes(Var2, Var1, label = ifelse(value<0.099, value, " ")), color = "black", size = 2.6) +
+  geom_text(aes(Var2, Var1, label = ifelse(value<0.09, value, " ")), color = "black", size = 2.6) +
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
@@ -230,20 +213,20 @@ plt_htmap_pvalue = ggplot(data = melted_pvalue_matrix_lambdaSignif, aes(Var2, Va
     legend.direction = "vertical")
 #guides(fill = guide_colorbar(barwidth = 7, barheight = 1, title.position = "top", title.hjust = 0.5))
 #ggsave(plot=plt_htmap_pvalue, filename="plt_PGLS_htmap_pranova.pdf", width=9.5, height=10)
-ggsave(plot=plt_htmap_pvalue, filename="plt_PGLS_htmap_pranova_all.pdf", width=5.7, height=3)
+ggsave(plot=plt_htmap_pvalue, filename="plt_PGLS_htmap_pranova_all.pdf", width=5.4, height=3)
 ggsave(plot=plt_htmap_pvalue, filename="plt_PGLS_htmap_pranova_all.png", width=7, height=3, dpi = 300)
 
-# The adjusted r value plot ---------------------------------------------------------
+# The adjusted r2 plot ---------------------------------------------------------
 plt_htmap_rsq = ggplot(data = melted_rsq_matrix_lambdaSignif, aes(Var2, Var1, fill = value)) +
   geom_tile(color = "black") +
-  scale_fill_gradient2(low = "#38C1F3", mid = "white", high = "#A63C6C",
+  scale_fill_gradient2(low = "white", mid = "#F26AA7", high = "#A63C6C",
                        na.value = "grey50",
-                       midpoint = 0, limit = c(-1,1), space = "Lab", 
-                       name="PGLS - R value\nCutoff: abs(R)<0.3") +
+                       midpoint = 0.5, limit = c(0,0.9), space = "Lab", 
+                       name="Adjusted R2") +
   theme_minimal() + 
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
   coord_fixed() +
-  geom_text(aes(Var2, Var1, label = ifelse(abs(value)>0.3, value, " ")), color = "black", size = 2.6) +
+  geom_text(aes(Var2, Var1, label = ifelse(value>0, value, " ")), color = "black", size = 2.6) +
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
@@ -257,5 +240,5 @@ plt_htmap_rsq = ggplot(data = melted_rsq_matrix_lambdaSignif, aes(Var2, Var1, fi
     legend.direction = "vertical")
 #guides(fill = guide_colorbar(barwidth = 7, barheight = 1, title.position = "top", title.hjust = 0.5))
 #ggsave(plot=plt_htmap_rsq, filename="plt_PGLS_htmap_rsq.pdf", width=9.5, height=10)
-ggsave(plot=plt_htmap_rsq, filename="plt_PGLS_htmap_rsq_all.pdf", width=5.9, height=3)
+ggsave(plot=plt_htmap_rsq, filename="plt_PGLS_htmap_rsq_all.pdf", width=5.4, height=3)
 ggsave(plot=plt_htmap_rsq, filename="plt_PGLS_htmap_rsq_all.png", width=7, height=3, dpi = 300)

@@ -36,12 +36,14 @@ traitData_touse_liana = traitData_touse %>% dplyr::filter(GrowthForm == "liana")
 # Batch SMA implementation to test variable correlation
 # ------------------------------------------------------------------------------
 # Define the list of variables
-variables = c("Asat","LCC","LMA","LNC","LPC","Rdark25P","Vcmax25","RCC","RD","RDMC","RNC","RPC","RTD","SRA","SRL","SRR25")
+variables = c("RTD","SRL","RD","RNC","RCC","RPC","SRR25","RDMC","LMA","LNC","LCC","LPC","Rdark25P", "Rlight25P","rs25","Vcmax25","Asat") # original
+
+# variables = c("vH","WD","Ks","TLP","SWCleaf","SWCbranch","H","DBH", "RTD","SRL","RD","RNC","RCC","RPC","SRR25","RDMC") # hydraulic
 
 # Initialize an empty matrix to store the P values and R square values
 pvalue_matrix = matrix(NA, nrow = length(variables), ncol = length(variables),
                         dimnames = list(variables, variables))
-rvalue_matrix = matrix(NA, nrow = length(variables), ncol = length(variables), 
+rsq_matrix = matrix(NA, nrow = length(variables), ncol = length(variables), 
                         dimnames = list(variables, variables))
 
 # Loop through each pair of variables
@@ -54,17 +56,11 @@ for (i in 1:length(variables)) {
       
       if (!is.null(model.sma)) {
         p_value <- as.numeric(model.sma[["pval"]])
-        r_value <- ifelse(
-          as.numeric(model.sma[["groupsummary"]][["Slope"]]) > 0,
-          sqrt(as.numeric(model.sma[["r2"]])),
-          -sqrt(as.numeric(model.sma[["r2"]]))
-        )
-        
-        pvalue_matrix[i,j] <- p_value
-        rvalue_matrix[i,j] <- r_value
+        rsq_value <- as.numeric(model.sma[["r2"]])
+        pvalue_matrix[i, j] <- p_value
+        rsq_matrix[i,j] <- rsq_value
       }
     }
-    #break # for testing
   }
 }
 
@@ -76,19 +72,20 @@ get_upper_tri = function(cormat){ # extracting only the lower part
 
 pvalue_matrix_uptri = get_upper_tri(pvalue_matrix)
 pvalue_matrix_uptri = round(pvalue_matrix_uptri,2)
-pvalue_matrix_uptri = ifelse(pvalue_matrix_uptri>0.1,0.1,pvalue_matrix_uptri) # filter later, just for coloring
+pvalue_matrix_uptri = ifelse(pvalue_matrix_uptri>0.1,0.1,pvalue_matrix_uptri)
 melted_pvalue_matrix = melt(pvalue_matrix_uptri, na.rm = TRUE)
 
-rvalue_matrix_uptri = get_upper_tri(rvalue_matrix)
-rvalue_matrix_uptri = round(rvalue_matrix_uptri,2)
-melted_rvalue_matrix = melt(rvalue_matrix_uptri, na.rm = TRUE)
+rsq_matrix_uptri = get_upper_tri(rsq_matrix)
+rsq_matrix_uptri = round(rsq_matrix_uptri,2)
+#rsq_matrix_uptri = ifelse(rsq_matrix_uptri<0.05,0,rsq_matrix_uptri)
+melted_rsq_matrix = melt(rsq_matrix_uptri, na.rm = TRUE)
 
 
 plt_SMA_htmap_pvalue = ggplot(data = melted_pvalue_matrix, aes(Var2, Var1, fill = value)) +
   geom_tile(color = "black") +
   scale_fill_gradient2(low = "#8583A9", high = "white",
                        midpoint = 0.085, limit = c(0,0.1), space = "Lab",
-                       name="SMA - P value\nCutoff: P>0.1") +
+                       name="SMA - P value (NS=0.1)") +
   theme_minimal() + 
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size = 11), axis.text.y = element_text(size = 10)) +
   coord_fixed() +
@@ -107,15 +104,15 @@ plt_SMA_htmap_pvalue = ggplot(data = melted_pvalue_matrix, aes(Var2, Var1, fill 
 ggsave(plot=plt_SMA_htmap_pvalue, filename="plt_SMA_htmap_pvalue_RESLES.pdf", width=6.5, height=6.5)
 
 
-plt_SMA_htmap_rvalue = ggplot(data = melted_rvalue_matrix, aes(Var2, Var1, fill = value)) +
+plt_SMA_htmap_rsq = ggplot(data = melted_rsq_matrix, aes(Var2, Var1, fill = value)) +
   geom_tile(color = "black") +
-  scale_fill_gradient2(low = "#38C1F3", mid = "white", high = "#A63C6C",
-                       midpoint = 0, limit = c(-1,1), space = "Lab", 
-                       name="SMA - R value\nCutoff: abs(R)<0.3") +
+  scale_fill_gradient2(low = "white", mid = "#F26AA7", high = "#A63C6C",
+                       midpoint = 0.6, limit = c(0,1), space = "Lab", 
+                       name="SMA - R square value") +
   theme_minimal() + 
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size = 11), axis.text.y = element_text(size = 10)) +
   coord_fixed() +
-  geom_text(aes(Var2, Var1, label = ifelse(abs(value)>0.3, value, " ")), color = "black", size = 4) +
+  geom_text(aes(Var2, Var1, label = ifelse(value>0.05, value, " ")), color = "black", size = 4) +
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
@@ -127,7 +124,7 @@ plt_SMA_htmap_rvalue = ggplot(data = melted_rvalue_matrix, aes(Var2, Var1, fill 
     legend.position = c(0.6, 0.7),
     legend.direction = "horizontal")+
   guides(fill = guide_colorbar(barwidth = 7, barheight = 1, title.position = "top", title.hjust = 0.5))
-ggsave(plot=plt_SMA_htmap_rvalue, filename="plt_SMA_htmap_rvalue_RESLES.pdf", width=6.5, height=6.5)
+ggsave(plot=plt_SMA_htmap_rsq, filename="plt_SMA_htmap_rsq_RESLES.pdf", width=6.5, height=6.5)
 
 # # Plot the heatmap (method 2: pheatmap)
 # #pdf("plt_PGLS_Prhtmap03.pdf", width = 7, height = 6.5) # original

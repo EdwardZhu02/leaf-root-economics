@@ -40,7 +40,7 @@ rownames(nonphyloPCAData_numonly) = nonphyloPCAData_numonly$PCAIdentifier_spgf
 
 # scale traits based on columns (mean=0, SD=1, same as z-transform) 
 nonphyloPCAData_numonly[, traitName_touse] = apply(nonphyloPCAData_numonly[, traitName_touse], 2, scale)
-
+#
 
 # Part 2 : define functions for non-phylo PCA calculation ----------------------
 func_nonphyPCA_stepwise <- function(var_traitName_touse_subset, var_nonphyloPCAData_numonly){
@@ -185,7 +185,7 @@ varAngleMelted_combined = varAngleMelted_combined %>%
   dplyr::mutate(pair_name = paste0(trait1,"-",trait2)) %>%
   dplyr::mutate(pair_annotation = ifelse(
     pair_name == "SRL-RD", "RES collaboration",
-    ifelse(pair_name %in% c("RTD-RNC","RNC-RDMC","RTD-RDMC"), "RES conservation",
+    ifelse(pair_name %in% c("RTD-RNC","RNC-RDMC","RTD-RDMC"), "RES convervation",
            ifelse(pair_name %in% c("LMA-LNC","LMA-LPC","LNC-LPC"), "LES", "other")))
   )
 
@@ -201,7 +201,6 @@ plt_anglecorr_addRDMC = ggplot(data=varAngleMelted_combined,
   stat_poly_eq(formula = y ~ x, aes(label = paste0("p",paste(ifelse(..p.value..<0.0001, "<0.0001", paste0("=",..p.value..)), ..rr.label.., sep = "~~"))), parse = TRUE, rr.digits = 4) + 
   scale_color_manual(values = c("#EECA40", "lightgray", "#5EC7D0", "#F07673")) + 
   theme_classic() + theme(plot.background = element_blank()) +
-  labs(x="R-LES", y="R-LES + RDMC") + 
   coord_cartesian(xlim = c(0, 180), ylim = c(0, 180))
 
 # plot2: raw-raw+LPC
@@ -215,7 +214,6 @@ plt_anglecorr_addLPC = ggplot(data=varAngleMelted_combined,
   stat_poly_eq(formula = y ~ x, aes(label = paste0("p",paste(ifelse(..p.value..<0.0001, "<0.0001", paste0("=",..p.value..)), ..rr.label.., sep = "~~"))), parse = TRUE, rr.digits = 4) + 
   scale_color_manual(values = c("#EECA40", "lightgray", "#5EC7D0", "#F07673")) + 
   theme_classic() + theme(plot.background = element_blank()) +
-  labs(x="R-LES", y="R-LES + LPC") + 
   coord_cartesian(xlim = c(0, 180), ylim = c(0, 180))
 
 # plot3: raw-raw+RDMCLPC
@@ -229,11 +227,10 @@ plt_anglecorr_addRDMCLPC = ggplot(data=varAngleMelted_combined,
   stat_poly_eq(formula = y ~ x, aes(label = paste0("p",paste(ifelse(..p.value..<0.0001, "<0.0001", paste0("=",..p.value..)), ..rr.label.., sep = "~~"))), parse = TRUE, rr.digits = 4) + 
   scale_color_manual(values = c("#EECA40", "lightgray", "#5EC7D0", "#F07673")) + 
   theme_classic() + theme(plot.background = element_blank()) +
-  labs(x="R-LES", y="R-LES + RDMC,LPC") + 
   coord_cartesian(xlim = c(0, 180), ylim = c(0, 180))
 
 plt_anglecorr_nonphy_total = plt_anglecorr_addRDMC + plt_anglecorr_addLPC + plt_anglecorr_addRDMCLPC + plot_layout(guides = "collect") & theme(legend.position='bottom', legend.title = element_blank())
 
 ggsave(plot = plt_anglecorr_nonphy_total, filename = "plt_anglecorr_nonphy_total.pdf", width = 8, height= 3.2)
-# ggsave(plot = plt_anglecorr_nonphy_total, filename = "plt_anglecorr_nonphy_total.png", width = 8, height= 3.2, dpi=300)
+ggsave(plot = plt_anglecorr_nonphy_total, filename = "plt_anglecorr_nonphy_total.png", width = 8, height= 3.2, dpi=300)
 

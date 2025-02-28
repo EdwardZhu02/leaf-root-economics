@@ -104,7 +104,7 @@ traitData_RLES_phylo = traitData_all_Phylo[, traitName_RLES_phylo] %>% na.omit()
 rownames(traitData_RLES_phylo) = phyloPCAData_numonly_rownames
 
 
-rep = 1000 #Number of REPETITIONS
+rep = 500 #Number of REPETITIONS
 traitsRand =  c("Rand_RLES","Rand_RES")
 END_PCA_Rand = matrix(NA, nrow = rep, ncol = length(traitsRand), 
                        dimnames = list(paste0("Rep_", 1:rep), traitsRand)) # To store the results
@@ -238,25 +238,24 @@ plt_END_RLESaltpred = ggplot(ENDdata_total_df_long_plt1, aes(x = comb_group,y = 
   
   geom_bar(stat = "identity",width = 0.6,position = "dodge",color="black",linewidth=0.2) +
   geom_segment(aes(x = 0.5, xend = 1.4, y = ENDdata_total_list$nonphy_RLES_Rand, yend = ENDdata_total_list$nonphy_RLES_Rand), linewidth=0.7, color="darkred", linetype = "dashed") +
-  geom_segment(aes(x = 1.6, xend = 2.5, y = ENDdata_total_list$phy_RLES_Rand, yend = ENDdata_total_list$phy_RLES_Rand), linewidth=0.7, color="darkblue", linetype = "dashed") +
+  geom_segment(aes(x = 1.6, xend = 2.5, y = ENDdata_total_list$phy_RLES_Rand, yend = ENDdata_total_list$nonphy_RLES_Rand), linewidth=0.7, color="darkblue", linetype = "dashed") +
   geom_text(aes(x=1, y=5.2, label = paste0(
-    "END (R-LES+Random) = ",
+    "END (R+L+Rand) = ",
     signif(ENDdata_total_list$nonphy_RLES_Rand, digits = 3))), 
     fontface = "bold", size = 3.5, angle=0) +
   geom_text(aes(x=2, y=5.2, label = paste0(
-    "END (R-LES+Random) = ",
+    "END (R+L+Rand) = ",
     signif(ENDdata_total_list$phy_RLES_Rand, digits = 3))), 
     fontface = "bold", size = 3.5, angle=0) +
   geom_text(aes(label = signif(END, digits = 3)), fontface = "bold",
             position=position_dodge(width = 0.65), vjust=-0.4, size = 3.5, angle=0) +
-  # scale_fill_manual(values = c("#1999B2","#95BCE5","#E84445","#F39DA0")) +
-  scale_fill_manual(values = c("#9BBBE1", "#C8C2E4", "#E0B77F", "#F09BA0")) +
+  scale_fill_manual(values = c("#1999B2","#95BCE5","#E84445","#F39DA0")) +ss
   labs(y="Effective Number of Dimensions (END)") +
   theme_classic() +
   theme(axis.title.x = element_blank(), legend.title = element_blank())
 
-ggsave(plot=plt_END_RLESaltpred , filename = "plt_END_RLESaltpred.pdf", width = 7.5, height = 3.5)
-#ggsave(plot=plt_END_RLESaltpred , filename = "plt_END_RLESaltpred.png", width = 6.5, height = 3, dpi=300)
+ggsave(plot=plt_END_RLESaltpred , filename = "plt_END_RLESaltpred.pdf", width = 7, height = 3.5)
+ggsave(plot=plt_END_RLESaltpred , filename = "plt_END_RLESaltpred.png", width = 6.5, height = 3, dpi=300)
 
 
 plt_END_RESLESorthog = ggplot(ENDdata_total_df_long_plt2, aes(x = comb_group,y = END,fill = combination))+
@@ -267,22 +266,21 @@ plt_END_RESLESorthog = ggplot(ENDdata_total_df_long_plt2, aes(x = comb_group,y =
   
   geom_bar(stat = "identity",width = 0.6,position = "dodge",color="black",linewidth=0.2) +
   geom_segment(aes(x = 0.5, xend = 1.4, y = ENDdata_total_list$nonphy_RES_Rand, yend = ENDdata_total_list$nonphy_RES_Rand), linewidth=0.7, color="darkred", linetype = "dashed") +
-  geom_segment(aes(x = 1.6, xend = 2.5, y = ENDdata_total_list$phy_RES_Rand, yend = ENDdata_total_list$phy_RES_Rand), linewidth=0.7, color="darkblue", linetype = "dashed") +
+  geom_segment(aes(x = 1.6, xend = 2.5, y = ENDdata_total_list$phy_RES_Rand, yend = ENDdata_total_list$nonphy_RES_Rand), linewidth=0.7, color="darkblue", linetype = "dashed") +
   geom_text(aes(x=1, y=4.8, label = paste0(
-    "END (RES+Random) = ",
+    "END (RES+Rand) = ",
     signif(ENDdata_total_list$nonphy_RES_Rand, digits = 3))), 
     fontface = "bold", size = 3.5, angle=0) +
   geom_text(aes(x=2, y=4.8, label = paste0(
-    "END (RES+Random) = ",
+    "END (RES+Rand) = ",
     signif(ENDdata_total_list$phy_RES_Rand, digits = 3))), 
     fontface = "bold", size = 3.5, angle=0) +
   geom_text(aes(label = signif(END, digits = 3)), fontface = "bold",
             position=position_dodge(width = 0.65), vjust=-0.8, size = 3.5, angle=0) +
-  #scale_fill_manual(values = c("#1999B2","#95BCE5","#E84445","#F39DA0")) +
-  scale_fill_manual(values = c("#9BBBE1", "#C8C2E4", "#E0B77F", "#F09BA0")) +
+  scale_fill_manual(values = c("#1999B2","#95BCE5","#E84445","#F39DA0")) +
   labs(y="Effective Number of Dimensions (END)") +
   theme_classic() +
   theme(axis.title.x = element_blank(), legend.title = element_blank())
 
 ggsave(plot=plt_END_RESLESorthog, filename = "plt_END_RESLESorthog.pdf", width = 7, height = 3.5)
-#ggsave(plot=plt_END_RESLESorthog, filename = "plt_END_RESLESorthog.png", width = 6.5, height = 3, dpi=300)
+ggsave(plot=plt_END_RESLESorthog, filename = "plt_END_RESLESorthog.png", width = 6.5, height = 3, dpi=300)

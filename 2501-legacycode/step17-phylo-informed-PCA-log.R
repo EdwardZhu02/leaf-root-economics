@@ -133,7 +133,6 @@ phyloPCA.screeplot = fviz_screeplot(phyloPCA.results.prcomp, addlabels = TRUE, y
 ggsave(filename = "plt_phyloPCA_screeplot-RESLESLPCRDMC.pdf", plot = phyloPCA.screeplot, width = 3, height = 3)
 ggsave(filename = "plt_phyloPCA_screeplot-RESLESLPCRDMC.png", plot = phyloPCA.screeplot, width = 3, height = 3, dpi=300)
 
-
 # Step 5: Compare with non-phylo PCA, grouped barplot --------------------------
 screeData_compare_RLES = data.frame(
   Dimensions = c("1","2","3","4","5","6"),
@@ -152,36 +151,16 @@ screeData_compare_RLESLPCRDMC = data.frame(
   NonPhylo = c(32.5,25.7,22.5,8.8,6.3,2.5,1.6,0.1),
   Phylo = c(32.2,25,23.4,8.9,6.1,2.6,1.7,0.1))
 
-screeData_compare_touse = screeData_compare_RLES
-#screeData_compare_touse = screeData_compare_RLESLPC
-#screeData_compare_touse = screeData_compare_RLESRDMC
-#screeData_compare_touse = screeData_compare_RLESLPCRDMC
+screeData_compare_touse = screeData_compare_RLESLPCRDMC
 screeData_compare_touse = melt(screeData_compare_touse,variable.name="Category",value.name = "ExplainedVariance")
 
-# Grouped bar plot
-plt_scree_compare = ggplot(screeData_compare_touse) +
-  geom_bar(aes(x=Dimensions, y=ExplainedVariance, fill=Category), color="black", # border
-           stat="identity", width=0.8, position="dodge") + 
-  
-  geom_point(aes(x=Dimensions, y=ExplainedVariance, color=Category), size=2, position=position_dodge(width = 0.6)) +
-  geom_line(aes(x=Dimensions, y=ExplainedVariance, color=Category, group = Category), linewidth=1, position=position_dodge(width = 0.6)) +
-  
-  scale_fill_manual(values = c("#7998AD","#C47070")) + # bar coloring
-  scale_color_manual(values = c("#000080","#B22222")) + # point and line coloring
-  
-  geom_text(aes(x = Dimensions, y = ExplainedVariance, group = Category, label = paste0(ExplainedVariance, "%")),
-            position = position_dodge(width = 0.6),size = 3.5,vjust = 0.8,hjust=-0.7,angle=90) + 
-  labs(title="RES+LES", y="Variance Explained (%)") + 
-  theme_classic() +
-  scale_y_continuous(limits = c(0, 45), expand = c(0, 0)) + # Removes the blank space
-  theme(legend.title = element_blank(), 
-        legend.position = c(1, 1),
-        legend.justification = c(1, 1)
-        # legend.background = element_rect(fill = "white", color = "black")
-        )
-
-ggsave(filename = "plt_PCAcompare_scree-RESLES.pdf", plot = plt_scree_compare, width = 3.9, height = 3.5)
-#ggsave(filename = "plt_PCAcompare_scree-RESLESLPC.pdf", plot = plt_scree_compare, width = 3.9, height = 3.5)
-#ggsave(filename = "plt_PCAcompare_scree-RESLESRDMC.pdf", plot = plt_scree_compare, width = 3.9, height = 3.5)
-#ggsave(filename = "plt_PCAcompare_scree-RESLESLPCRDMC.pdf", plot = plt_scree_compare, width = 3.9, height = 3.5)
-
+# Plotting
+plt_scree_compare = ggplot(screeData_compare_touse, aes(x = Dimensions,y = ExplainedVariance,fill = Category))+
+  geom_bar(stat ="identity",width = 0.6,position = "dodge")+     
+  scale_fill_manual(values = c("#7998AD","#C47070")) +
+  geom_text(aes(label = paste0(ExplainedVariance, "%")),position=position_dodge(width = 0.5),size = 3,vjust = 0.8,hjust=-0.7,angle=90)+ 
+  labs(title="PCA axes: RES+LES(+LPC,RDMC)") + theme_classic() +
+  scale_y_continuous(limits = c(0, 45)) +
+  theme(legend.title = element_blank(), legend.position = "bottom")#, legend.text = element_text(size = 18, face = "bold"))
+ggsave(filename = "plt_PCAcompare_scree-RESLESLPCRDMC.pdf", plot = plt_scree_compare, width = 3.5, height = 4)
+ggsave(filename = "plt_PCAcompare_scree-RESLESLPCRDMC.png", plot = plt_scree_compare, width = 3.5, height = 4, dpi=300)

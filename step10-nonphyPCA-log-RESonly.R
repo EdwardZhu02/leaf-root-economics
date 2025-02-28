@@ -18,7 +18,7 @@ load("traitDataFujian-spavg-phylo-step2.RData")
 traitDataPCA_touse = traitDataIndv_spgfavg_log # perform scaling later (line 36, 27/12-24)
 ### SET TRAITS TO USE###
 # All traits, need to be log transformed and scaled 
-traitName_touse = c("RTD","SRL","RD","RNC","LMA","LNC","RDMC","LPC")
+traitName_touse = c("RTD","SRL","RD","RNC")
 
 # Resolve problem: non-unique values when setting 'row.names': ‘Castanopsis fordii’, ‘Machilus pauhoi’ 
 # because of sp-gf averaging
@@ -50,10 +50,10 @@ nonphyloPCAresult = PCA(nonphyloPCAData_numonly, scale.unit = T, graph = F)
 # ------------------------------------------------------------------------------
 # Scree plot: contributions of axes
 # ------------------------------------------------------------------------------
-nonphyloPCA.screeplot = fviz_screeplot(nonphyloPCAresult, addlabels = TRUE, ylim = c(0, 40),
+nonphyloPCA.screeplot = fviz_screeplot(nonphyloPCAresult, addlabels = TRUE, ylim = c(0, 60),
                                        barfill="#7998AD", barcolor="#7998AD", linecolor="black") +
-  labs(title="PCA, LES+RES") + theme_classic()
-# ggsave(filename = "plt_nonphyPCA_scree-RLES.pdf", plot = nonphyloPCA.screeplot, width = 3, height = 3)
+  labs(title="RES") + theme_classic()
+ggsave(filename = "plt_nonphyPCA_scree-RES.pdf", plot = nonphyloPCA.screeplot, width = 3, height = 3)
 
 # ------------------------------------------------------------------------------
 # 2-D PCA biplot: GrowthForm as grouping factor
@@ -61,7 +61,7 @@ nonphyloPCA.screeplot = fviz_screeplot(nonphyloPCAresult, addlabels = TRUE, ylim
 # 
 # TODO: Added 27/12-24
 # SET GLOBAL LIMIT FOR contribution levels ('contrib') FOR LEGEND MERGING
-contrib_limits = c(5, 30)
+# contrib_limits = c(5, 30)
 #
 # 
 plt_nonphyloPCA_biplot_ax12 = fviz_pca_biplot(
@@ -70,12 +70,11 @@ plt_nonphyloPCA_biplot_ax12 = fviz_pca_biplot(
   repel=T,
   col.var = "gray20",
   #select.var = list(cos2=0.3),
-  select.var = list(contrib=length(traitName_touse)-2),
+  # select.var = list(contrib=length(traitName_touse)-2),
   # cos2: if cos2 is in [0, 1], ex: 0.6, then individuals/variables with a cos2 > 0.6 are drawn.
   # contrib: if contrib > 1, ex: 5, then the top 5 individuals/variables with the highest contrib are drawn
   # addEllipses=T, palette = c("#8583A9", "#A0BDD5", "#CA8BA8")) + # liana, shrub, tree
   addEllipses=T, palette = c("#EECA40", "#7998AD", "#F07673")) + # liana, shrub, tree
-  annotate("text", x = -2.5, y = 3.8, label=paste0("Top ", length(traitName_touse)-2), color = "black") + 
   labs(title = "") + theme_classic() + theme(legend.direction = 'horizontal', legend.position = 'none', legend.title = element_blank())
 
 plt_nonphyloPCA_contribplot_ax12 = fviz_pca_var(
@@ -85,52 +84,16 @@ plt_nonphyloPCA_contribplot_ax12 = fviz_pca_var(
   #gradient.cols = c("#7998AD", "#EECA40", "#F07673")
   ) +
   theme_classic() +
-  annotate("text", x = -0.9, y = 1, label="All", color = "black") + 
   theme(legend.direction = 'vertical', legend.position = 'none') + labs(title = "") +
   scale_color_gradientn(colors = c("#71BFB2", "#F2BA2F", "#AD0B08"))#, limits = contrib_limits)
 
-
-plt_nonphyloPCA_biplot_ax23 = fviz_pca_biplot(
-  nonphyloPCAresult, label = "var", habillage=nonphyloPCAData_meta_rmna$GrowthForm, 
-  axes=c(2,3),
-  repel=T,
-  col.var = "gray20",
-  #select.var = list(cos2=0.3),
-  select.var = list(contrib=length(traitName_touse)-2),
-  # cos2: if cos2 is in [0, 1], ex: 0.6, then individuals/variables with a cos2 > 0.6 are drawn.
-  # contrib: if contrib > 1, ex: 5, then the top 5 individuals/variables with the highest contrib are drawn
-  # addEllipses=T, palette = c("#8583A9", "#A0BDD5", "#CA8BA8")) + # liana, shrub, tree
-  addEllipses=T, palette = c("#EECA40", "#7998AD", "#F07673")) + # liana, shrub, tree
-  annotate("text", x = -2.5, y = 3.8, label=paste0("Top ", length(traitName_touse)-2), color = "black") + 
-  labs(title = "") + theme_classic() + theme(legend.direction = 'horizontal', legend.position = 'none', legend.title = element_blank())
-
-plt_nonphyloPCA_contribplot_ax23 = fviz_pca_var(
-  nonphyloPCAresult, col.var = "contrib",
-  axes=c(2,3),
-  repel=T
-  #gradient.cols = c("#7998AD", "#EECA40", "#F07673")
-  ) +
-  theme_classic() +
-  annotate("text", x = -0.9, y = 1, label="All", color = "black") + 
-  theme(legend.direction = 'vertical', legend.position = "none") + labs(title = "") +
-  scale_color_gradientn(colors = c("#71BFB2", "#F2BA2F", "#AD0B08"))#, limits = contrib_limits)
 
 # Save plot after merging ------------------------------------------------------
 plt_ax12 = plt_nonphyloPCA_biplot_ax12 + plt_nonphyloPCA_contribplot_ax12 + 
   #plot_annotation(title = "PC1-2, biplot and contribution plot") +
   plot_layout(guides = "collect") & theme(legend.position='right')
 
-plt_ax23 = plt_nonphyloPCA_biplot_ax23 + plt_nonphyloPCA_contribplot_ax23 + 
-  #plot_annotation(title = "PC2-3, biplot and contribution plot") +
-  plot_layout(guides = "collect") & theme(legend.position='right')
-
-# TODO: 25-02-01, extract contrib and cos2 in numbers
-plt_nonphyloPCA_contribplot_ax12[["data"]] %>% view()
-plt_nonphyloPCA_contribplot_ax23[["data"]] %>% view()
-
-# Combine the two plots side by side and save
-plt_ax12_ax23_combined = plot_grid(plt_ax12, plt_ax23, ncol = 1)
-ggsave(plot = plt_ax12_ax23_combined, filename = "plt_nonphyPCA_ax123Combined_RLESRDMC.pdf",
-       width = 6.5, height = 7)
+ggsave(plot = plt_ax12, filename = "plt_nonphyPCA_ax12Combined_RES.pdf",
+       width = 6.5, height = 3.5)
 
 

@@ -98,10 +98,8 @@ smaplt.LNC_LMA = ggplot(smaplt_total_data, aes(x=LMA, y=LNC)) +
     xlim = c(min(smaplt_shrub_data$LMA, na.rm=T), max(smaplt_shrub_data$LMA, na.rm=T)),
     color = "#7998AD", linewidth = 1.0
     ) +
-  labs(subtitle = "LES fast-slow (LNC-LMA)", x = "lnLMA", y = "lnLNC") + 
-  theme_minimal() + 
-  theme(axis.line = element_line(colour = "black")) +
-  theme(legend.position = "none") +
+  labs(subtitle = "LES fast-slow (LMA-LNC)", x = "logLMA", y = "logLNC") + 
+  theme_classic() + theme(legend.position = "none") +
   scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
   annotate("text", x = 0.008, y = 1.18, label = model.sma.LNC_LMA_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 
@@ -188,10 +186,8 @@ smaplt.RD_SRL = ggplot(smaplt_total_data, aes(x=SRL, y=RD)) +
     xlim = c(min(smaplt_shrub_data$SRL, na.rm=T), max(smaplt_shrub_data$SRL, na.rm=T)),
     color = "#7998AD", linewidth = 1.0
   ) +
-  labs(subtitle = "RES collaboration (RD-SRL)", x = "lnSRL", y = "lnRD") + 
-  theme_minimal() + 
-  theme(axis.line = element_line(colour = "black")) +
-  theme(legend.position = "none") +
+  labs(subtitle = "RES collaboration (SRL-RD)", x = "logSRL", y = "logRD") + 
+  theme_classic() + theme(legend.position = "none") +
   scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
   annotate("text", x = 3.6, y = 0.53, label = model.sma.RD_SRL_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 
@@ -278,10 +274,8 @@ smaplt.RNC_RTD = ggplot(smaplt_total_data, aes(x=RTD, y=RNC)) +
     xlim = c(min(smaplt_shrub_data$RTD, na.rm=T), max(smaplt_shrub_data$RTD, na.rm=T)),
     color = "#7998AD", linewidth = 1.0
   ) +
-  labs(subtitle = "RES conservation (RNC-RTD)", x = "lnRTD", y = "lnRNC") + 
-  theme_minimal() + 
-  theme(axis.line = element_line(colour = "black")) +
-  theme(legend.position = "none") +
+  labs(subtitle = "RES conservation (RNC-RTD)", x = "logRTD", y = "logRNC") + 
+  theme_classic() + theme(legend.position = "none") +
   scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
   annotate("text", x = 0.165, y = 1.48, label = model.sma.RNC_RTD_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 
@@ -369,10 +363,8 @@ smaplt.RDMC_RTD = ggplot(smaplt_total_data, aes(x=RTD, y=RDMC)) +
     xlim = c(min(smaplt_shrub_data$RTD, na.rm=T), max(smaplt_shrub_data$RTD, na.rm=T)),
     color = "#7998AD", linewidth = 1.0
   ) +
-  labs(subtitle = "RES conservation (RDMC-RTD)", x = "lnRTD", y = "lnRDMC") + 
-  theme_minimal() + 
-  theme(axis.line = element_line(colour = "black")) +
-  theme(legend.position = "none") +
+  labs(subtitle = "RES conservation (RDMC-RTD)\nalternative predictor", x = "logRTD", y = "logRDMC") + 
+  theme_classic() + theme(legend.position = "none") +
   scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
   annotate("text", x = 0.05, y = 0.42, label = model.sma.RDMC_RTD_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 
@@ -460,10 +452,8 @@ smaplt.RDMC_RNC = ggplot(smaplt_total_data, aes(x=RNC, y=RDMC)) +
     xlim = c(min(smaplt_shrub_data$RNC, na.rm=T), max(smaplt_shrub_data$RNC, na.rm=T)),
     color = "#7998AD", linewidth = 1.0
   ) +
-  labs(subtitle = "RES conservation (RDMC-RNC)", x = "lnRNC", y = "lnRDMC") + 
-  theme_minimal() + 
-  theme(axis.line = element_line(colour = "black")) +
-  theme(legend.position = "none") +
+  labs(subtitle = "RES conservation (RDMC-RNC)\nalternative predictor", x = "logRNC", y = "logRDMC") + 
+  theme_classic() + theme(legend.position = "none") +
   scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
   annotate("text", x = 0.87, y = 0.335, label = model.sma.RDMC_RNC_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 
@@ -551,10 +541,8 @@ smaplt.LNC_LPC = ggplot(smaplt_total_data, aes(x=LPC, y=LNC)) +
     xlim = c(min(smaplt_shrub_data$LPC, na.rm=T), max(smaplt_shrub_data$LPC, na.rm=T)),
     color = "#7998AD", linewidth = 1.0
   ) +
-  labs(subtitle = "LES fast-slow (LNC-LPC)", x = "lnLPC", y = "lnLNC") + 
-  theme_minimal() + 
-  theme(axis.line = element_line(colour = "black")) +
-  theme(legend.position = "none") +
+  labs(subtitle = "LES fast-slow (LPC-LNC)\nalternative predictor", x = "logLPC", y = "logLNC") + 
+  theme_classic() + theme(legend.position = "none") +
   scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
   annotate("text", x = 0.37, y = 1.35, label = model.sma.LNC_LPC_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 
@@ -642,10 +630,8 @@ smaplt.LMA_LPC = ggplot(smaplt_total_data, aes(x=LPC, y=LMA)) +
     xlim = c(min(smaplt_shrub_data$LPC, na.rm=T), max(smaplt_shrub_data$LPC, na.rm=T)),
     color = "#7998AD", linewidth = 1.0
   ) +
-  labs(subtitle = "LES fast-slow (LMA-LPC)", x = "lnLPC", y = "lnLMA") + 
-  theme_minimal() + 
-  theme(axis.line = element_line(colour = "black")) +
-  theme(legend.position = "none") +
+  labs(subtitle = "LES fast-slow (LPC-LMA)\nalternative predictor", x = "logLPC", y = "logLMA") + 
+  theme_classic() + theme(legend.position = "none") +
   scale_color_manual(values = c("#EECA40", "#7998AD", "#F07673")) + 
   annotate("text", x = 0.52, y = 0.016, label = model.sma.LMA_LPC_annotlabel, hjust = 0, vjust = 1, size = 3.2)
 

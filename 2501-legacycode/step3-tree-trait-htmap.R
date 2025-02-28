@@ -1,11 +1,5 @@
 # ------------------------------------------------------------------------------
 # Plot phylogeny tree, generate trait value heat map besides the tree
-#
-# NOTICE!!!!
-# package "ggheatmap" should be installed as version 2.11
-# or else the theme function will be incompatible
-# TRY: devtools::install_github("EdwardZhu02/ggheatmap")
-#
 # ------------------------------------------------------------------------------
 rm(list=ls())
 library(tidyverse)
@@ -76,14 +70,18 @@ pltdata.phylo.heatmap_tiplabel = pltdata.phylo.heatmap$tipLabelMatched
 pltdata.phylo.heatmap = pltdata.phylo.heatmap %>% dplyr::select(-tipLabelMatched) %>%
   dplyr::select(
     RTD,SRL,RD,RNC,SRA,RPC,RCC,RDMC,SRR25, # FR traits
-    LMA,LNC,LCC,LPC,Rdark25P,Vcmax25,Asat # leaf traits
-    
+    LMA,LNC,LCC,LPC,Rdark25P,Rlight25P,Vcmax25,Asat, # leaf traits
+    rs25, # stem traits
+    vH,WD,Ks,TLP,SWCleaf,SWCbranch,H,DBH # hydraulic traits
   ) %>% # TRAITS
   dplyr::rename(
-    R_RTD = RTD, R_SRL = SRL, R_RD = RD, R_RNC = RNC,
-    R_SRA = SRA, R_RPC = RPC, R_RCC = RCC, R_RDMC = RDMC, R_SRR25 = SRR25,
+    R_RTD = RTD, R_SRL = SRL, R_RD = RD, R_RNC = RNC, R_SRA = SRA, R_RPC = RPC, R_RCC = RCC, R_RDMC = RDMC, R_SRR25 = SRR25,
     L_LMA = LMA, L_LNC = LNC, L_LCC = LCC, L_LPC = LPC,
-    L_Rdark25P = Rdark25P, L_Vcmax25 = Vcmax25, L_Asat = Asat
+    L_Rdark25 = Rdark25P, # need rename for shorter names
+    L_Rlight25 = Rlight25P, # need rename for shorter names
+    L_Vcmax25 = Vcmax25, L_Asat = Asat,
+    S_rs25 = rs25,
+    H_vH = vH, H_WD = WD, H_Ks = Ks, H_TLP = TLP, H_SWCleaf = SWCleaf, H_SWCbrch = SWCbranch, H_H = H, H_DBH = DBH
   )
 
 # pltdata.phylo.heatmap[pltdata.phylo.heatmap>3] = 3 # normalize values that is too large (Added 10/10-24)
@@ -91,7 +89,7 @@ rownames(pltdata.phylo.heatmap) = pltdata.phylo.heatmap_tiplabel
 
 # Curate annotation rows (trait kind)
 pltdata.phylo.heatmap.annot_traitkind = data.frame(
-  TraitKind = rep(c("Fine Root","Leaf"), times = c(9,7))
+  TraitKind = rep(c("root (R_)","leaf (L_)","stem (S_)","hydraulic (H_)"), times = c(9,8,1,8))
 )
 rownames(pltdata.phylo.heatmap.annot_traitkind) = colnames(pltdata.phylo.heatmap)
 
@@ -102,10 +100,11 @@ pltdata.phylo.heatmap.annot_lifeform = pltdata.phylo.heatmap.annot_lifeform %>%
 rownames(pltdata.phylo.heatmap.annot_lifeform) = pltdata.phylo.heatmap_tiplabel
 
 # Curate color
-growthFormCol <- c("#7998AD","#F07673","#FFAF00","#EECA40")
+growthFormCol <- c("#F9E400","#D4352D","#FFAF00","#CC976B")
 names(growthFormCol) <- c("shrub","tree", "tree+shrub", "liana")
-traitKindCol <- c("#B5711E","#7ab656")
-names(traitKindCol) <- c("Fine Root","Leaf")
+traitKindCol <- c("#FFE1FF","#E4B1F0","#7E60BF","#433878")
+names(traitKindCol) <- c("roo
+                         t (R_)","leaf (L_)","stem (S_)","hydraulic (H_)")
 color_list = list(GrowthForm=growthFormCol, TraitKind=traitKindCol)
 
 # Start plotting
@@ -116,20 +115,20 @@ plt.phylo.heatmap = ggheatmap(pltdata.phylo.heatmap, scale = "none",
                               border = "grey",
                               cluster_rows = F, cluster_cols = F,
                               color = colorRampPalette(c("#91CAE8","#FFFFFF","#F48892"))(100),
-                              legendName = "Normalized\nTrait Value")
+                              legendName = "log(TraitValue)\n(normalized to 0-1)")
 
-# ggheatmap_plotlist(plt.phylo.heatmap)
-
-plt.phylo.heatmap = plt.phylo.heatmap %>% ggheatmap_theme(1, 
-                theme = list(
+plt.phylo.heatmap = plt.phylo.heatmap %>% ggheatmap_theme(1, # the heatmap
+                theme =list(
                   theme(axis.text.x = element_text(angle = 90, hjust=1, face = "bold"),
-                        axis.text.y = element_text(color = "black",face = "italic")),
+                        axis.text.y = element_text(colour = "black",face = "italic")),
+                  theme(legend.title = element_text(face = "bold")),
+                  theme(legend.title = element_text(face = "bold")),
+                  theme(legend.title = element_text(face = "bold")),
                   theme(legend.title = element_text(face = "bold"))
                 ))
+# ggheatmap_plotlist(plt.phylo.heatmap)
 
 
 # Plot phylogenentic tree besides heatmap to show genus-level trait conservation patterns
-plt.phylo.total = plt.phylo.heatmap %>% insert_left(plt.phylo.tree, width = 0.4)
-plt.phylo.total
-
-ggsave(filename = "plt_phylotree_heatmap_all.pdf", plot = plt.phylo.total, width = 6.4, height = 6)
+plt.phylo.total = plt.phylo.heatmap %>% insert_left(plt.phylo.tree, width = 0.25)
+ggsave(filename = "plt_phylotree_heatmap_all.pdf", plot = plt.phylo.total, width = 8.2, height = 6)
